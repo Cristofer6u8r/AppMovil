@@ -66,33 +66,40 @@ namespace GestorTareasMovil
             // 8. Optimización de Recursos (Asincronía en interfaz móvil)
             await Dispatcher.DispatchAsync(() => 
             {
+                var lbl = new Label { Text = "• " + nuevaTarea, FontSize = 16 };
+
                 // 6. Navegación Táctil y Gestual (Swipes)
                 var swipeGesture = new SwipeGestureRecognizer { Direction = SwipeDirection.Left };
-                swipeGesture.Swiped += (s, args) => 
+                swipeGesture.Swiped += async (s, args) => 
                 {
                     // 9. Invocación de Diálogos Móviles (DisplayAlert)
-                    DisplayAlert("Borrar", "Deslizaste la tarea para borrarla", "OK");
+                    bool borrar = await DisplayAlert("Borrar", "¿Seguro que quieres borrar esta tarea?", "Sí", "No");
+                    
+                    // AHORA SÍ SE BORRA DE LA PANTALLA
+                    if(borrar) 
+                    {
+                        listaTareas.Children.Remove(lbl);
+                    }
                 };
 
-                var lbl = new Label { Text = "• " + nuevaTarea, FontSize = 16 };
                 lbl.GestureRecognizers.Add(swipeGesture);
-
                 listaTareas.Children.Add(lbl);
             });
 
-            // 4. Persistencia en Almacenamiento Sandboxed (Preferences) + 3. Independencia de Red (Offline)
+            // 4. Persistencia en Almacenamiento Sandboxed (Preferences) + 3. Offline
             int totalTareas = Preferences.Get("TotalTareas", 0) + 1;
             Preferences.Set("TotalTareas", totalTareas);
             Preferences.Set($"Tarea_{totalTareas}", nuevaTarea);
 
-            // 2. Acceso a Hardware y Sensores (Motor Háptico / Vibración)
+            // 2. Acceso a Hardware y Sensores (Haptic Feedback) - ARREGLADO
             try
             {
-                Vibration.Vibrate(TimeSpan.FromMilliseconds(200));
+                // Toque háptico físico que no requiere permisos extra en Android
+                HapticFeedback.Default.Perform(HapticFeedbackType.Click);
             }
-            catch (FeatureNotSupportedException)
+            catch (Exception)
             {
-                // Dispositivo sin motor háptico
+                // El catch(Exception) general evita que la app se cierre bajo cualquier error de permisos
             }
 
             txtTarea.Text = string.Empty;
